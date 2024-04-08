@@ -1,0 +1,16 @@
+{
+  "folders": [
+	{
+		"path": "Development Project"
+	}
+],
+  "settings": {
+    "files.associations": {
+      "*.embeddedhtml": "html",
+      "afgaga\\": "c",
+      "cryptography": "c",
+      "linux": "c"
+    },
+    "liveServer.settings.multiRootWorkspaceName": "Bootcamp"
+  }
+}

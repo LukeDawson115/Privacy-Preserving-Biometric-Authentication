@@ -1,0 +1,41 @@
+#include<string.h>
+#include<stdio.h>
+
+
+// Define a maximum length for username and password
+#define MAX_LENGTH 20
+
+// Function to check if the provided username and password are correct
+int authenticate(char username[], char password[]) {
+    // Replace these with actual stored credentials
+    char storedUsername[] = "john_doe";
+    char storedPassword[] = "secure123";
+
+    // Compare provided username and password with stored credentials
+    if (strcmp(username, storedUsername) == 0 && strcmp(password, storedPassword) == 0) {
+        return 1; // Authentication successful
+    } else {
+        return 0; // Authentication failed
+    }
+}
+
+int main() {
+    char username[MAX_LENGTH];
+    char password[MAX_LENGTH];
+
+    // Get username and password from user
+    printf("Enter username: ");
+    scanf("%s", username);
+
+    printf("Enter password: ");
+    scanf("%s", password);
+
+    // Call the authenticate function to check credentials
+    if (authenticate(username, password)) {
+        printf("Authentication successful! Welcome, %s!\n", username);
+    } else {
+        printf("Authentication failed. Please check your username and password.\n");
+    }
+
+    return 0;
+}

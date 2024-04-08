@@ -1,0 +1,147 @@
+import json
+import tenseal as ts
+import base64
+import zlib
+import logging
+
+DATABASE_FILE_PATH = '/Users/lukedawson1156/Desktop/Yr 3 Project/Development Project/fingerprint_database.txt'
+
+logging.basicConfig(level=logging.DEBUG, filename='biometric_system.log', filemode='w',
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+def save_database(database, file_path):
+    logging.debug("Saving database to %s", file_path)
+    # Convert the bytes data to base64 encoded strings and compress before saving
+    encoded_and_compressed_database = {
+        k: base64.b64encode(zlib.compress(v, level=9)).decode('utf-8') for k, v in database.items()
+    }
+    with open(file_path, 'w') as file:
+        json.dump(encoded_and_compressed_database, file)
+
+def load_database(file_path):
+    logging.debug("Loading database from %s", file_path)
+    try:
+        with open(file_path, 'r') as file:
+            encoded_and_compressed_database = json.load(file)
+        # Decompress and decode the base64 encoded strings back to bytes
+        return {
+            k: zlib.decompress(base64.b64decode(v.encode('utf-8')))
+            for k, v in encoded_and_compressed_database.items()
+        }
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}  # Returns an empty dictionary if the file doesn't exist or if the JSON is invalid
+    except zlib.error:
+        print("Decompression error. Database may be corrupted.")
+        return {}
+
+fingerprint_database = load_database(DATABASE_FILE_PATH)
+
+def create_context_and_keys():
+    #Initialises a TenSEAL context with CKKS scheme and generates necessary keys.
+    context = ts.context(ts.SCHEME_TYPE.CKKS, poly_modulus_degree=8192, coeff_mod_bit_sizes=[60, 40, 40, 60])
+    context.generate_galois_keys()
+    context.global_scale = 2**40
+    return context
+
+
+
+def preprocess_biometric_data(data):
+    logging.debug("Preprocessing biometric data: %s", data)
+    # Example: Assuming the biometric data ranges from 0 to 100.
+    # Adjust these min and max values based on your actual data range.
+    min_val = 0
+    max_val = 100
+    normalized_data = [(float(i) - min_val) / (max_val - min_val) for i in data]
+    return normalized_data
+
+def encrypt_biometric_data(data, context):
+    logging.debug("Encrypting biometric data")
+    #Encrypts biometric data using the provided TenSEAL context.
+    encrypted_data = ts.ckks_vector(context, data)
+    return encrypted_data.serialize()
+
+def decrypt_data(encrypted_data, context):
+    logging.debug("Decrypting data")
+    #Decrypts the given encrypted data using the provided TenSEAL context.
+    encrypted_vector = ts.lazy_ckks_vector_from(encrypted_data)
+    encrypted_vector.link_context(context)
+    decrypted_data = encrypted_vector.decrypt()
+    return [round(num, 2) for num in decrypted_data]
+
+def perform_encrypted_operations(encrypted_data, context):
+    #Performs predefined homomorphic operations on the encrypted data.
+    encrypted_vector = ts.lazy_ckks_vector_from(encrypted_data)
+    encrypted_vector.link_context(context)
+    encrypted_vector.add_(10)
+    encrypted_vector.mul_(2)
+    return encrypted_vector.serialize()
+
+def input_biometric_data():
+    #Simulates biometric data capture by allowing the user to input a string of 5 integers.
+    #Preprocesses the input data for normalization.
+    print("Please enter your biometric data as 5 numbers separated by space (each number represents a biometric point):")
+    data = list(map(float, input().split()))
+    if len(data) != 5:
+        print("Invalid input. Please enter exactly 5 numbers.")
+        return input_biometric_data()
+    preprocessed_data = preprocess_biometric_data(data)
+    return preprocessed_data
+
+def print_all_user_ids():
+    # Prints all User IDs that are currently stored in the database.
+    if fingerprint_database:
+        print("User IDs currently stored in the database:")
+        for user_id in fingerprint_database.keys():
+            print(user_id)
+    else:
+        print("No fingerprints are currently stored in the database.")
+
+def compare_biometric_data(stored_data, input_data, threshold=0.95):
+    logging.debug("Comparing biometric data: stored_data=%s, input_data=%s, threshold=%s", stored_data, input_data, threshold)
+    # Compares stored biometric data with the input data to determine if they match with 95%+ correctness.
+    differences = [abs(a - b) for a, b in zip(stored_data, input_data)]
+    avg_difference = sum(differences) / len(differences)
+    match_threshold = 1 - threshold
+    return avg_difference <= match_threshold
+
+def store_or_verify_fingerprint(context):
+    global fingerprint_database
+    action = input("Do you have a stored fingerprint? (yes/no/exit): ").lower().strip()
+    logging.info("User action: %s", action)
+    if action == "yes":
+        user_id = input("Please enter your User ID: ").strip()
+        if user_id in fingerprint_database:
+            print("Please enter your biometric data for verification:")
+            fingerprint_data = input_biometric_data()
+            encrypted_data = encrypt_biometric_data(fingerprint_data, context)
+            stored_encrypted_data = fingerprint_database[user_id]
+            stored_fingerprint_data = decrypt_data(stored_encrypted_data, context)
+            current_fingerprint_data = decrypt_data(encrypted_data, context)
+            if compare_biometric_data(stored_fingerprint_data, current_fingerprint_data):
+                print("Biometrics approved.")
+            else:
+                print("Error: Biometrics denied.")
+        else:
+            print("No user ID found in the database.")
+    elif action == "no":
+        user_id = input("Enter a User ID for your new fingerprint: ").strip()
+        fingerprint_data = input_biometric_data()
+        encrypted_data = encrypt_biometric_data(fingerprint_data, context)
+        fingerprint_database[user_id] = encrypted_data
+        save_database(fingerprint_database, DATABASE_FILE_PATH)  # Save the updated database
+        print("New fingerprint stored successfully.")
+        print_all_user_ids()
+        print("Your data has been encrypted.")
+    elif action == "exit":
+        print("Exiting the system.")
+        return
+    else:
+        print("Invalid response. Please enter 'yes', 'no', or 'exit'.")
+
+# Main Function Demonstrating PPBA System
+def privacy_preserving_biometric_authentication():
+    context = create_context_and_keys()
+    store_or_verify_fingerprint(context)
+
+if __name__ == "__main__":
+    privacy_preserving_biometric_authentication()

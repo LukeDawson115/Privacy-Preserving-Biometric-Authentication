@@ -1,0 +1,6 @@
+2024-04-08 14:23:31,828 - DEBUG - Loading database from /Users/lukedawson1156/Desktop/Yr 3 Project/Development Project/fingerprint_database.txt
+2024-04-08 14:23:37,072 - DEBUG - Preprocessing biometric data: [9.0, 9.0, 9.0, 9.0, 9.0]
+2024-04-08 14:23:37,073 - DEBUG - Encrypting biometric data
+2024-04-08 14:23:37,087 - DEBUG - Decrypting data
+2024-04-08 14:23:37,091 - DEBUG - Decrypting data
+2024-04-08 14:23:37,095 - DEBUG - Comparing biometric data: stored_data=[6.164212570713478e+30, 1.5734672206394295e+31, -4.6005014290683215e+31, 1.0212055250173416e+31, -2.0650613471081743e+31], input_data=[0.09, 0.09, 0.09, 0.09, 0.09], threshold=0.95
