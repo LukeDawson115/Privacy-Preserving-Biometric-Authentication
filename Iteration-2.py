@@ -6,12 +6,12 @@ import sqlite3
 import os
 
 
-DATABASE_PATH = '/Users/lukedawson1156/Desktop/Yr 3 Project/Development Project/Iterations/Database/fingerprints.db'
-KEYS_FILE_PATH = '/Users/lukedawson1156/Desktop/Yr 3 Project/Development Project/Iterations/Database/Keys/print-key.bin'
+DATABASE_PATH = '/Users/fingerprints.db'
+KEYS_FILE_PATH = '/Users/print-key.bin'
 
 logging.basicConfig(
     level=logging.DEBUG, 
-    filename='/Users/lukedawson1156/Desktop/Yr 3 Project/Development Project/Iterations/Logs/biometric_system_1.log',
+    filename='/Users/biometric_system_1.log',
     filemode='a',
     format='%(asctime)s - %(levelname)s - %(message)s',
     )
